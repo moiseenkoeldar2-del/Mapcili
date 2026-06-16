@@ -21,58 +21,53 @@
         header { background-color: var(--panel-bg); border-bottom: 1px solid var(--border-color); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
         .logo-area h1 { font-size: 1.4rem; text-transform: uppercase; color: var(--danger-high); }
         .logo-area p { font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .live-indicator { display: flex; align-items: center; gap: 8px; background: rgba(36, 161, 222, 0.1); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(36, 161, 222, 0.3); font-size: 0.85rem; font-family: var(--font-mono); }
+        .dot { width: 8px; height: 8px; background-color: #24A1DE; border-radius: 50%; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
         
         .main-container { display: flex; flex: 1; overflow: hidden; }
         .sidebar { width: 360px; background-color: var(--panel-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; gap: 15px; }
         
-        .status-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border-left: 4px solid var(--danger-low); }
+        .status-box { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border-left: 4px solid var(--danger-low); transition: all 0.3s ease; }
         .status-box.high { border-left-color: var(--danger-high); background: rgba(239, 68, 68, 0.05); }
         .status-box.mid { border-left-color: var(--danger-mid); background: rgba(245, 158, 11, 0.05); }
         .status-box h3 { margin-bottom: 8px; font-size: 1.1rem; }
         .status-box p { font-size: 0.9rem; color: #cbd5e1; line-height: 1.4; }
         
-        /* Кнопки пульта управления прямо на сайте */
-        .admin-panel { background: rgba(255,255,255,0.01); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 10px; }
-        .admin-panel h4 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
-        .btn { background: #1f2937; border: 1px solid #374151; color: var(--text-light); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: left; transition: background 0.2s; }
-        .btn:hover { background: #374151; }
-        .btn.danger { border-color: var(--danger-high); color: var(--danger-high); }
-        .btn.warning { border-color: var(--danger-mid); color: var(--danger-mid); }
-        .btn.success { border-color: var(--danger-low); color: var(--danger-low); }
+        .tg-log { background: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted); max-height: 200px; overflow-y: auto; }
+        .tg-log h5 { color: #24A1DE; margin-bottom: 5px; text-transform: uppercase; font-size: 0.75rem; }
 
         .map-area { flex: 1; position: relative; background-color: #0d131f; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .radar-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(31, 41, 55, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(31, 41, 55, 0.15) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
         .map-visualization { width: 95%; height: 85%; border: 1px dashed rgba(107, 114, 128, 0.3); border-radius: 8px; position: relative; background: radial-gradient(circle, rgba(17,24,39,0.6) 0%, rgba(9,13,22,0.9) 100%); display: flex; align-items: center; justify-content: center; }
         
-        .map-target { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); }
+        .map-target { position: absolute; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); transition: all 0.5s ease; }
         .target-blip { width: 14px; height: 14px; border-radius: 50%; background-color: var(--danger-high); box-shadow: 0 0 12px var(--danger-high); position: relative; }
         .target-blip::after { content: ''; position: absolute; top: -10px; left: -10px; width: 32px; height: 32px; border: 1px solid var(--danger-high); border-radius: 50%; animation: pulse 2s infinite ease-out; opacity: 0; }
         @keyframes pulse { 0% { transform: scale(0.3); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
-        .target-label { background-color: rgba(9, 13, 22, 0.95); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-family: var(--font-mono); margin-top: 6px; white-space: nowrap; color: var(--danger-high); }
+        .target-label { background-color: rgba(9, 13, 22, 0.95); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-family: var(--font-mono); margin-top: 6px; white-space: nowrap; color: var(--danger-high); font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
         <div class="logo-area">
             <h1>Система моніторингу «ЗАГРОЗА»</h1>
-            <p>GitHub Web-Версія</p>
+            <p>Розумний радар. Синхронізовано з t.me/mapmyy</p>
         </div>
+        <div class="live-indicator"><div class="dot"></div><span>ПАРСЕР МІСТ ЗАПУЩЕНИЙ</span></div>
     </header>
 
     <div class="main-container">
         <aside class="sidebar">
-            <div class="admin-panel">
-                <h4>Пульт керування картою</h4>
-                <button class="btn danger" onclick="setStatus('drone')">🛸 Пуск Шахедів</button>
-                <button class="btn danger" onclick="setStatus('missile')">🚀 Ракетна небезпека</button>
-                <button class="btn warning" onclick="setStatus('mig')">🦊 Зліт МіГ-31К</button>
-                <button class="btn success" onclick="setStatus('clear')">🟢 ВІДБІЙ / Чисто</button>
-            </div>
-
             <h2 style="font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted);">Поточний статус</h2>
             <div id="status-container" class="status-box low">
-                <h3 id="status-title">ПОВІТРЯНИЙ ПРОСТІР ЧИСТИЙ</h3>
-                <p id="status-desc">Активних загроз (Ракет / БПЛА) в небі не виявлено. Дякуємо силам ППО.</p>
+                <h3 id="status-title">Завантаження...</h3>
+                <p id="status-desc">Читаємо стрічку новин каналу...</p>
+            </div>
+
+            <div class="tg-log">
+                <h5>Останній аналізований пост:</h5>
+                <p id="raw-tg-text">Очікування повідомлення...</p>
             </div>
         </aside>
 
@@ -85,47 +80,81 @@
     </div>
 
     <script>
-        // Логика переключения статусов прямо в браузере без Python
-        function setStatus(type) {
-            const statusBox = document.getElementById('status-container');
-            const title = document.getElementById('status-title');
-            const desc = document.getElementById('status-desc');
-            const mapVisual = document.getElementById('map-visual');
-            
-            // Удаляем старые цели
-            const targets = mapVisual.getElementsByClassName('map-target');
-            while(targets.length > 0) { targets[0].remove(); }
+        const CHANNEL_NAME = 'mapmyy';
 
-            if (type === 'drone') {
-                statusBox.className = "status-box high";
-                title.innerText = "🔴 АКТИВНА АТАКA БПЛА";
-                desc.innerText = "Зафіксовано рух ударних дронів типу «Шахед» через північні області.";
-                createTarget("35%", "45%", "MTR-1042 (БПЛА Шахед)");
-            } else if (type === 'missile') {
-                statusBox.className = "status-box high";
-                title.innerText = "🚨 КРИТИЧНА РАКЕТНА НЕБЕЗПЕКА";
-                desc.innerText = "Масовані пуски крилатих/балістичних ракет. Залишайтеся в безпечних місцях!";
-                createTarget("55%", "65%", "MSL-903 (Крилаті ракети)");
-            } else if (type === 'mig') {
-                statusBox.className = "status-box mid";
-                title.innerText = "🟡 ЗАГРОЗА КИНДЖАЛІВ (МіГ-31К)";
-                desc.innerText = "В повітрі знаходиться носій гіперзвукових ракет Кинджал. Тривога по всій країні.";
-            } else if (type === 'clear') {
-                statusBox.className = "status-box low";
-                title.innerText = "🟢 ПОВІТРЯНИЙ ПРОСТІР ЧИСТИЙ";
-                desc.innerText = "Активних загроз не виявлено. Дякуємо силам ППО.";
-            }
-        }
+        // База координат для симуляции городов на радарной сетке
+        const LOCATIONS = {
+            "Солоного": { top: "58%", left: "52%", name: "смт Солоне" },
+            "Солоне": { top: "58%", left: "52%", name: "смт Солоне" },
+            "Дніпро": { top: "50%", left: "55%", name: "м. Дніпро" },
+            "Дніпра": { top: "50%", left: "55%", name: "м. Дніпро" },
+            "Київ": { top: "30%", left: "40%", name: "м. Київ" },
+            "Харків": { top: "38%", left: "70%", name: "м. Харків" },
+            "Одеса": { top: "70%", left: "42%", name: "м. Одеса" },
+            "Львів": { top: "35%", left: "20%", name: "м. Львів" },
+            "Суми": { top: "25%", left: "62%", name: "м. Суми" }
+        };
 
-        function createTarget(top, left, label) {
-            const mapVisual = document.getElementById('map-visual');
-            const targetEl = document.createElement('div');
-            targetEl.className = 'map-target';
-            targetEl.style.top = top;
-            targetEl.style.left = left;
-            targetEl.innerHTML = `<div class="target-blip"></div><div class="target-label">${label}</div>`;
-            mapVisual.appendChild(targetEl);
-        }
-    </script>
-</body>
-</html>
+        async function checkTelegramChannel() {
+            try {
+                const response = await fetch(`https://rss2json.com{CHANNEL_NAME}`);
+                const data = await response.json();
+                
+                if (!data.items || data.items.length === 0) return;
+                
+                const lastPost = data.items[0];
+                const text = lastPost.description || lastPost.content;
+                
+                document.getElementById('raw-tg-text').innerHTML = text;
+
+                const statusBox = document.getElementById('status-container');
+                const title = document.getElementById('status-title');
+                const desc = document.getElementById('status-desc');
+                const mapVisual = document.getElementById('map-visual');
+                
+                // Полная очистка карты перед нанесением свежих целей
+                const targets = mapVisual.getElementsByClassName('map-target');
+                while(targets.length > 0) { targets[0].remove(); }
+
+                let typeLabel = "ЦІЛЬ";
+                let isThreat = false;
+
+                // 1. Определение типа угрозы из текста сообщения
+                if (text.includes("Шахед") || text.includes("БПЛА") || text.includes("шахед")) {
+                    statusBox.className = "status-box high";
+                    title.innerText = "🔴 АКТИВНА АТАКA БПЛА";
+                    desc.innerText = "У небі зафіксовано ударні дрони.";
+                    typeLabel = "БПЛА Шахед";
+                    isThreat = true;
+                } 
+                else if (text.includes("Ракетна") || text.includes("ракет") || text.includes("Ракета")) {
+                    statusBox.className = "status-box high";
+                    title.innerText = "🚨 РАКЕТНА НЕБЕЗПЕКА";
+                    desc.innerText = "Зафіксовано рух або пуск ракет!";
+                    typeLabel = "Ракета";
+                    isThreat = true;
+                } 
+                else if (text.includes("МіГ-31К") || text.includes("Кинджал")) {
+                    statusBox.className = "status-box mid";
+                    title.innerText = "🟡 ЗАГРОЗА «КИНДЖАЛІВ»";
+                    desc.innerText = "Превентивна тривога через зліт МіГ-31К.";
+                } 
+                else if (text.includes("ВІДБІЙ") || text.includes("чистий") || text.includes("відбій")) {
+                    statusBox.className = "status-box low";
+                    title.innerText = "🟢 ПОВІТРЯНИЙ ПРОСТІР ЧИСТИЙ";
+                    desc.innerText = "Активних загроз не виявлено. Дякуємо ППО.";
+                }
+
+                // 2. Поиск городов и направлений в тексте для точной отрисовки
+                if (isThreat) {
+                    let targetPlaced = false;
+
+                    // Особый случай: Шахед/Ракета на Днепр с Солоного
+                    if ((text.includes("Дніпро") || text.includes("Дніпра")) && (text.includes("Солоного") || text.includes("Солоне"))) {
+                        // Ставим точку между Соленым и Днепром (имитируем вектор движения)
+                        createTarget("54%", "53%", `${typeLabel} (Солоне -> Дніпро)`);
+                        desc.innerText += " Напрямок: через смт Солоне на Дніпро!";
+                        targetPlaced = true;
+                    } else {
+                        // Проверяем остальные города по списку базы данных
+                        for (let key in LOCATIONS) {
