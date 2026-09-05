@@ -36,19 +36,18 @@
 
 <script src="https://unpkg.com"></script>
 <script>
-    // Инициализация карты с центром в Украине
+    // Инициализация карты
     const map = L.map('map').setView([48.3794, 31.1656], 6);
 
     L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
         attribution: '© CARTO', subdomains: 'abcd', maxZoom: 20
     }).addTo(map);
 
-    // --- КОНФИГУРАЦИЯ БОТА (ВАШ ТОКЕН) ---
+    // --- КОНФИГУРАЦИЯ БОТА ---
     const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w";
     let lastUpdateId = 0;
     let knownMarkers = {};
 
-    // База городов на чистом JavaScript регулярных выражений RegExp
     const LOCATIONS = [
         { pattern: /дніпр[оаіу]/, coords: [48.4647, 35.0462] },
         { pattern: /камʼянськ[оеау]|кам'янськ[оеау]/, coords: [48.5142, 34.6133] },
@@ -84,7 +83,7 @@
         else if(type==='бпла') { emoji='🛸'; cls+=' r-bpla'; }
         else if(type==='вибух') { emoji='💥'; cls+=' r-boom'; }
 
-        // ИСПРАВЛЕНО НАВСЕГДА: Прописаны чёткие числа, карта больше не упадёт
+        // ИСПРАВЛЕНО: Размеры иконки теперь четко заданы числами
         const icon = L.divIcon({ 
             html: `<div class="${cls}">${emoji}</div>`, 
             iconSize:, 
@@ -107,7 +106,14 @@
             const response = await fetch(url);
             const data = await response.json();
 
-            if (data.ok && data.result.length > 0) {
+            if (!data.ok) {
+                document.getElementById('status-text').style.color = '#ff3333';
+                document.getElementById('status-text').innerText = "Помилка API: " + data.description;
+                setTimeout(checkTelegramUpdates, 2000);
+                return;
+            }
+
+            if (data.result.length > 0) {
                 data.result.forEach(update => {
                     lastUpdateId = update.update_id;
 
@@ -132,9 +138,12 @@
                     }
                 });
             }
+            document.getElementById('status-text').style.color = '#00ff00';
             document.getElementById('status-text').innerText = `Оновлено: ${new Date().toLocaleTimeString()}. Очікування повідомлень...`;
         } catch (error) {
             console.error("Помилка API Telegram:", error);
+            document.getElementById('status-text').style.color = '#ff3333';
+            document.getElementById('status-text').innerText = "Помилка мережі...";
         }
         setTimeout(checkTelegramUpdates, 2000);
     }
@@ -144,6 +153,7 @@
 </script>
 </body>
 </html>
+
 
 
 
