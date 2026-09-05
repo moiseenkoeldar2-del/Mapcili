@@ -43,7 +43,7 @@
         attribution: '© CARTO', subdomains: 'abcd', maxZoom: 20
     }).addTo(map);
 
-    // --- КОНФИГУРАЦИЯ БОТА ---
+    // --- КОНФИГУРАЦИЯ БОТА (ТОКЕН УЖЕ ВСТАВЛЕН) ---
     const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w";
     let lastUpdateId = 0;
     let knownMarkers = {};
@@ -84,11 +84,11 @@
         else if(type==='бпла') { emoji='🛸'; cls+=' r-bpla'; }
         else if(type==='вибух') { emoji='💥'; cls+=' r-boom'; }
 
-        // ИСПРАВЛЕНО: Заданы точные физические размеры матрицы иконки
+        // ИСПРАВЛЕНО: Теперь пустые значения заменены на фиксированные размеры [32, 32]
         const icon = L.divIcon({ 
             html: `<div class="${cls}">${emoji}</div>`, 
             iconSize:, 
-            iconAnchor: [16, 16] 
+            iconAnchor: [16, 16]
         });
         
         map.flyTo([lat, lng], 9, { duration: 2 });
@@ -126,7 +126,7 @@
 
                     for (const loc of LOCATIONS) {
                         if (loc.pattern.test(text)) {
-                            spawn(loc.coords[0], loc.coords[1], threatType, msg.text, msgId);
+                            spawn(loc.coords, loc.coords, threatType, msg.text, msgId);
                             break;
                         }
                     }
