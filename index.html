@@ -2,16 +2,12 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Радар Моніторингу Загроз</title>
-    <!-- Подключаем скрипт Telegram для работы внутри мессенджера -->
-    <script src="https://telegram.org"></script>
-    <!-- Подключаем интерактивные карты Leaflet -->
+    <title>Радар Моніторингу Загроз (Без Сервера)</title>
     <link rel="stylesheet" href="https://unpkg.com" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #111; font-family: sans-serif; overflow: hidden; }
         #map { width: 100%; height: 100vh; }
         
-        /* Стили пульсирующих маркеров ракет, БПЛА и взрывов */
         .threat-icon { font-size: 32px; text-align: center; animation: pulse 1.5s infinite; }
         .r-rocket { filter: drop-shadow(0px 0px 10px #ff2222); }
         .r-bpla { filter: drop-shadow(0px 0px 10px #ff9900); }
@@ -22,12 +18,10 @@
             50% { transform: scale(1.3); opacity: 0.7; }
             100% { transform: scale(1); opacity: 1; }
         }
-        
         #panel {
             position: absolute; top: 15px; left: 60px; z-index: 1000;
             background: rgba(20, 20, 20, 0.95); color: #fff; padding: 12px 18px;
             border-radius: 8px; border: 1px solid #333; font-size: 13px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         .dot { display: inline-block; width: 10px; height: 10px; background: #00ff00; border-radius: 50%; margin-right: 6px; animation: blink 1s infinite; }
         @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
@@ -36,94 +30,120 @@
 <body>
 
 <div id="panel">
-    <span class="dot"></span> <b>Радар Прямого Ефіру (Через Бота)</b><br>
-    <small id="desc" style="color: #00ff00;">Моніторинг каналів @povitryanatrivogaaa та @sectorv666</small>
+    <span class="dot" id="dot"></span> <b id="title">Радар «Map Control»</b><br>
+    <small id="status-text" style="color: #00ff00;">Пряме підключення до Telegram API...</small>
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com"></script>
 <script>
-    // Инициализируем Telegram Web App интерфейс
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Разворачиваем карту на весь экран телефона/ПК
-
-    // Создаем карту с центром в Украине
     const map = L.map('map').setView([48.3794, 31.1656], 6);
 
-    // Стабильная и быстрая темная тема карт
     L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
-        attribution: '© CARTO',
-        subdomains: 'abcd',
-        maxZoom: 20
+        attribution: '© CARTO', subdomains: 'abcd', maxZoom: 20
     }).addTo(map);
 
-    // База координат для мгновенной расстановки целей (с поддержкой падежей)
+    // --- НАСТРОЙКА БОТА ---
+    const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w"; // Ваш токен
+    let lastUpdateId = 0; // Идентификатор последнего прочитанного сообщения
+    let knownMarkers = {}; // Чтобы не дублировать старые маркеры
+
     const LOCATIONS = {
-        r"дніпр[оаіу]": [48.4647, 35.0462],
-        r"камʼянськ[оеау]|кам'янськ[оеау]": [48.5142, 34.6133],
-        r"харків[аіу]?": [50.0038, 36.2304],
-        r"полтав[аіу]": [49.5883, 34.5514],
-        r"київ[аіу]?": [50.4501, 30.5234],
-        r"запоріжж[яіу]": [47.8388, 35.1396],
-        r"одес[аіу]": [46.4825, 30.7233],
-        r"львів[аіу]?": [49.8397, 24.0297],
-        r"крив[ои]й р[іі]г|крив[ои]му розі": [47.9105, 33.3918],
-        r"миколаїв[аіу]?": [46.9750, 31.9946],
-        r"херсон[аіу]?": [46.6354, 32.6169]
+        "дніпро": [48.4647, 35.0462], "дніпра": [48.4647, 35.0462], "дніпру": [48.4647, 35.0462],
+        "камʼянське": [48.5142, 34.6133], "кам'янське": [48.5142, 34.6133],
+        "харків": [50.0038, 36.2304], "харкова": [50.0038, 36.2304],
+        "полтава": [49.5883, 34.5514], "полтави": [49.5883, 34.5514],
+        "київ": [50.4501, 30.5234], "києва": [50.4501, 30.5234],
+        "запоріжжя": [47.8388, 35.1396], "одеса": [46.4825, 30.7233], "львів": [49.8397, 24.0297]
     };
 
-    // Встроенный синтезатор звука сирены (работает без аудиофайлов)
-    function playAlarm(type) {
+    function sound(type) {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        
+        const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.type = type === 'ракета' ? 'sawtooth' : 'sine';
         osc.frequency.setValueAtTime(type === 'вибух' ? 180 : 500, ctx.currentTime);
         osc.frequency.linearRampToValueAtTime(type === 'вибух' ? 30 : 900, ctx.currentTime + 0.5);
-        
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.6);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.6);
     }
 
-    // Функция отображения летящей цели на радаре
-    function spawnThreat(lat, lng, type, text, channel) {
-        let emoji = '⚠️'; 
-        let cls = 'threat-icon';
-        
-        if (type === 'ракета') { emoji = '🚀'; cls += ' r-rocket'; }
-        else if (type === 'бпла') { emoji = '🛸'; cls += ' r-bpla'; }
-        else if (type === 'вибух') { emoji = '💥'; cls += ' r-boom'; }
+    function spawn(lat, lng, type, text, msgId) {
+        if (knownMarkers[msgId]) return; // Защита от дубликатов
+        knownMarkers[msgId] = true;
 
-        const icon = L.divIcon({ html: `<div class="${cls}">${emoji}</div>`, iconSize:, iconAnchor: });
-        
-        // Плавный подлет радара к месту фиксации угрозы
+        let emoji = '⚠️'; let cls = 'threat-icon';
+        if(type==='ракета') { emoji='🚀'; cls+=' r-rocket'; }
+        else if(type==='бпла') { emoji='🛸'; cls+=' r-bpla'; }
+        else if(type==='вибух') { emoji='💥'; cls+=' r-boom'; }
+
+        const icon = L.divIcon({ html: `<div class="${cls}">${emoji}</div>`, iconSize:, iconAnchor: [16, 16] });
         map.flyTo([lat, lng], 9, { duration: 2 });
-        
-        try { playAlarm(type); } catch(e) {}
+        try { sound(type); } catch(e) {}
 
         const marker = L.marker([lat, lng], { icon: icon }).addTo(map)
-            .bindPopup(`<div style="color:#000; font-size:12px;"><b>Джерело: @${channel}</b><br><b style="color:red;">ЗАГРОЗА: ${type.toUpperCase()}</b><br><br>${text}</div>`)
+            .bindPopup(`<div style="color:#000; font-size:12px;"><b>ОПЕРАТИВНА ЗВОДКА:</b><br><br>${text}</div>`)
             .openPopup();
 
-        // Маркер автоматически исчезает через 20 минут, чтобы карта не засорялась
-        setTimeout(() => map.removeLayer(marker), 1200000);
+        setTimeout(() => map.removeLayer(marker), 1200000); // Удалить маркер через 20 минут
     }
 
-    // Слушаем сигналы от нашего Telegram-бота
-    // Бот будет отправлять данные прямо в это открытое мини-приложение
-    tg.onEvent('customEvent', function(eventData) {
-        if (eventData && eventData.type === 'new_threat') {
-            spawnThreat(eventData.lat, eventData.lng, eventData.threat, eventData.text, eventData.channel);
+    // Функция ручного опроса сервера Telegram (Long Polling)
+    async function checkTelegramUpdates() {
+        try {
+            const url = `https://telegram.org{BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=5`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.ok && data.result.length > 0) {
+                data.result.forEach(update => {
+                    lastUpdateId = update.update_id;
+
+                    // Ловим сообщения, которые бот видит в каналах (где он админ)
+                    let msg = update.channel_post || update.message;
+                    if (!msg || !msg.text) return;
+
+                    let text = msg.text.lower();
+                    let msgId = msg.message_id;
+
+                    // Фильтруем отбои
+                    if (any(word in text for word in ['відбій', 'чисто', 'втрачено', 'загроза минула'])) return;
+
+                    // Определяем тип опасности
+                    let threatType = 'увага';
+                    if (any(w in text for w in ['ракета', 'ракет', 'калібр', 'балістика'])) threatType = 'ракета';
+                    else if (any(w in text for w in ['шахед', 'бпла', 'дрон', 'мопед'])) threatType = 'бпла';
+                    else if (any(w in text for w in ['вибух', 'бах', 'гучно'])) threatType = 'вибух';
+
+                    // Ищем город по тексту
+                    for (const [city, coords] of Object.entries(LOCATIONS)) {
+                        if (text.includes(city)) {
+                            spawn(coords[0], coords[1], threatType, msg.text, msgId);
+                            break;
+                        }
+                    }
+                });
+            }
+            document.getElementById('status-text').innerText = `Оновлено: ${new Date().toLocaleTimeString()}. Очікування повідомлень...`;
+        } catch (error) {
+            console.error("Помилка API Telegram:", error);
         }
-    });
+        // Запускаем бесконечный цикл опроса
+        setTimeout(checkTelegramUpdates, 3000);
+    }
+
+    // Хелперы для проверки ключевых слов
+    function any(array, text) { return array.some(word => text.includes(word)); }
+
+    // Старт опроса
+    checkTelegramUpdates();
+
+    window.addEventListener('click', () => { console.log("Звук активовано"); }, { once: true });
 </script>
 </body>
 </html>
+
+
 
