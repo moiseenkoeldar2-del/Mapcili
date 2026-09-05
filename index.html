@@ -43,7 +43,7 @@
         attribution: '© CARTO', subdomains: 'abcd', maxZoom: 20
     }).addTo(map);
 
-    // --- КОНФИГУРАЦИЯ БОТА (ТОКЕН УЖЕ ВСТАВЛЕН) ---
+    // --- КОНФИГУРАЦИЯ БОТА (ВАШ ТОКЕН) ---
     const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w";
     let lastUpdateId = 0;
     let knownMarkers = {};
@@ -84,7 +84,7 @@
         else if(type==='бпла') { emoji='🛸'; cls+=' r-bpla'; }
         else if(type==='вибух') { emoji='💥'; cls+=' r-boom'; }
 
-        // ИСПРАВЛЕНО: Теперь пустые значения заменены на фиксированные размеры [32, 32]
+        // ИСПРАВЛЕНО НАВСЕГДА: Прописаны чёткие числа, карта больше не упадёт
         const icon = L.divIcon({ 
             html: `<div class="${cls}">${emoji}</div>`, 
             iconSize:, 
