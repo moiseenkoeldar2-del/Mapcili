@@ -2,17 +2,15 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Радар Моніторингу Загроз (Без Сервера)</title>
+    <title>Радар Моніторингу Загроз (Автономний)</title>
     <link rel="stylesheet" href="https://unpkg.com" />
     <style>
         body, html { margin: 0; padding: 0; height: 100%; background: #111; font-family: sans-serif; overflow: hidden; }
-        #map { width: 100%; height: 100vh; }
-        
+        #map { width: 100%; height: 100vh; background: #111; }
         .threat-icon { font-size: 32px; text-align: center; animation: pulse 1.5s infinite; }
         .r-rocket { filter: drop-shadow(0px 0px 10px #ff2222); }
         .r-bpla { filter: drop-shadow(0px 0px 10px #ff9900); }
         .r-boom { filter: drop-shadow(0px 0px 12px #ffff00); }
-        
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.3); opacity: 0.7; }
@@ -31,32 +29,39 @@
 
 <div id="panel">
     <span class="dot" id="dot"></span> <b id="title">Радар «Map Control»</b><br>
-    <small id="status-text" style="color: #00ff00;">Пряме підключення до Telegram API...</small>
+    <small id="status-text" style="color: #00ff00;">З'єднання з Telegram API...</small>
 </div>
 
 <div id="map"></div>
 
 <script src="https://unpkg.com"></script>
 <script>
+    // Инициализация карты с центром в Украине
     const map = L.map('map').setView([48.3794, 31.1656], 6);
 
     L.tileLayer('https://{s}://{z}/{x}/{y}{r}.png', {
         attribution: '© CARTO', subdomains: 'abcd', maxZoom: 20
     }).addTo(map);
 
-    // --- НАСТРОЙКА БОТА ---
-    const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w"; // Ваш токен
-    let lastUpdateId = 0; // Идентификатор последнего прочитанного сообщения
-    let knownMarkers = {}; // Чтобы не дублировать старые маркеры
+    // --- КОНФИГУРАЦИЯ БОТА ---
+    const BOT_TOKEN = "8877187091:AAGUMfMKSCitFae9Tdn0J-Lm5Wyabv5Tv6w";
+    let lastUpdateId = 0;
+    let knownMarkers = {};
 
-    const LOCATIONS = {
-        "дніпро": [48.4647, 35.0462], "дніпра": [48.4647, 35.0462], "дніпру": [48.4647, 35.0462],
-        "камʼянське": [48.5142, 34.6133], "кам'янське": [48.5142, 34.6133],
-        "харків": [50.0038, 36.2304], "харкова": [50.0038, 36.2304],
-        "полтава": [49.5883, 34.5514], "полтави": [49.5883, 34.5514],
-        "київ": [50.4501, 30.5234], "києва": [50.4501, 30.5234],
-        "запоріжжя": [47.8388, 35.1396], "одеса": [46.4825, 30.7233], "львів": [49.8397, 24.0297]
-    };
+    // База городов на чистом JavaScript регулярных выражений RegExp
+    const LOCATIONS = [
+        { pattern: /дніпр[оаіу]/, coords: [48.4647, 35.0462] },
+        { pattern: /камʼянськ[оеау]|кам'янськ[оеау]/, coords: [48.5142, 34.6133] },
+        { pattern: /харків[аіу]?/, coords: [50.0038, 36.2304] },
+        { pattern: /полтав[аіу]/, coords: [49.5883, 34.5514] },
+        { pattern: /київ[аіу]?/, coords: [50.4501, 30.5234] },
+        { pattern: /запоріжж[яіу]/, coords: [47.8388, 35.1396] },
+        { pattern: /одес[аіу]/, coords: [46.4825, 30.7233] },
+        { pattern: /львів[аіу]?/, coords: [49.8397, 24.0297] },
+        { pattern: /крив[ои]й р[іі]г|крив[ои]му розі/, coords: [47.9105, 33.3918] },
+        { pattern: /миколаїв[аіу]?/, coords: [46.9750, 31.9946] },
+        { pattern: /херсон[аіу]?/, coords: [46.6354, 32.6169] }
+    ];
 
     function sound(type) {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -71,7 +76,7 @@
     }
 
     function spawn(lat, lng, type, text, msgId) {
-        if (knownMarkers[msgId]) return; // Защита от дубликатов
+        if (knownMarkers[msgId]) return;
         knownMarkers[msgId] = true;
 
         let emoji = '⚠️'; let cls = 'threat-icon';
@@ -79,7 +84,13 @@
         else if(type==='бпла') { emoji='🛸'; cls+=' r-bpla'; }
         else if(type==='вибух') { emoji='💥'; cls+=' r-boom'; }
 
-        const icon = L.divIcon({ html: `<div class="${cls}">${emoji}</div>`, iconSize:, iconAnchor: [16, 16] });
+        // ИСПРАВЛЕНО: Заданы точные физические размеры матрицы иконки
+        const icon = L.divIcon({ 
+            html: `<div class="${cls}">${emoji}</div>`, 
+            iconSize:, 
+            iconAnchor: [16, 16] 
+        });
+        
         map.flyTo([lat, lng], 9, { duration: 2 });
         try { sound(type); } catch(e) {}
 
@@ -87,10 +98,9 @@
             .bindPopup(`<div style="color:#000; font-size:12px;"><b>ОПЕРАТИВНА ЗВОДКА:</b><br><br>${text}</div>`)
             .openPopup();
 
-        setTimeout(() => map.removeLayer(marker), 1200000); // Удалить маркер через 20 минут
+        setTimeout(() => map.removeLayer(marker), 1200000);
     }
 
-    // Функция ручного опроса сервера Telegram (Long Polling)
     async function checkTelegramUpdates() {
         try {
             const url = `https://telegram.org{BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=5`;
@@ -101,26 +111,22 @@
                 data.result.forEach(update => {
                     lastUpdateId = update.update_id;
 
-                    // Ловим сообщения, которые бот видит в каналах (где он админ)
                     let msg = update.channel_post || update.message;
                     if (!msg || !msg.text) return;
 
-                    let text = msg.text.lower();
+                    let text = msg.text.toLowerCase();
                     let msgId = msg.message_id;
 
-                    // Фильтруем отбои
-                    if (any(word in text for word in ['відбій', 'чисто', 'втрачено', 'загроза минула'])) return;
+                    if (['відбій', 'чисто', 'втрачено', 'загроза минула'].some(word => text.includes(word))) return;
 
-                    // Определяем тип опасности
                     let threatType = 'увага';
-                    if (any(w in text for w in ['ракета', 'ракет', 'калібр', 'балістика'])) threatType = 'ракета';
-                    else if (any(w in text for w in ['шахед', 'бпла', 'дрон', 'мопед'])) threatType = 'бпла';
-                    else if (any(w in text for w in ['вибух', 'бах', 'гучно'])) threatType = 'вибух';
+                    if (['ракета', 'ракет', 'калібр', 'балістика'].some(w => text.includes(w))) threatType = 'ракета';
+                    else if (['шахед', 'бпла', 'дрон', 'мопед'].some(w => text.includes(w))) threatType = 'бпла';
+                    else if (['вибух', 'бах', 'гучно'].some(w => text.includes(w))) threatType = 'вибух';
 
-                    // Ищем город по тексту
-                    for (const [city, coords] of Object.entries(LOCATIONS)) {
-                        if (text.includes(city)) {
-                            spawn(coords[0], coords[1], threatType, msg.text, msgId);
+                    for (const loc of LOCATIONS) {
+                        if (loc.pattern.test(text)) {
+                            spawn(loc.coords[0], loc.coords[1], threatType, msg.text, msgId);
                             break;
                         }
                     }
@@ -130,20 +136,15 @@
         } catch (error) {
             console.error("Помилка API Telegram:", error);
         }
-        // Запускаем бесконечный цикл опроса
-        setTimeout(checkTelegramUpdates, 3000);
+        setTimeout(checkTelegramUpdates, 2000);
     }
 
-    // Хелперы для проверки ключевых слов
-    function any(array, text) { return array.some(word => text.includes(word)); }
-
-    // Старт опроса
     checkTelegramUpdates();
-
     window.addEventListener('click', () => { console.log("Звук активовано"); }, { once: true });
 </script>
 </body>
 </html>
+
 
 
 
